@@ -7,6 +7,7 @@ from scipy.special import gamma, hyp2f1
 import scipy.integrate as integrate
 from lenstronomy.LensModel.Profiles.base_profile import LensProfileBase
 import lenstronomy.Util.constants as const
+from mpmath import hyp3f2
 __all__ = ['Uldm']
 
 
@@ -44,27 +45,27 @@ class Uldm(LensProfileBase):
         :return: central density in 1/arcsec
         """
         a_factor_sqrt = np.sqrt( (0.5)**(-1/slope) -1)
-        num_factor = gamma(slope) / gamma(slope - 1/2) * a_factor_sqrt / np.sqrt(np.pi)
+        num_factor = gamma(slope) / gamma(slope - 1/2) *  a_factor_sqrt / np.sqrt(np.pi)
         return kappa_0 * num_factor / theta_c
 
-    def _lensing_integral(self, x, slope = 8):
-        """
-        The analitic result of the integral entering the computation of the
-        lensing potential, that is
-        ..math::
-
-            \int dy/y (1 - (1 + y^2)^{3/2 - \beta})
-
-        :param x: evaluation point of the integral
-        :param slope: exponent entering the profile
-        :return: result of the antiderivative in x
-        """
-        if np.isscalar(x) == True:
-            integral = integrate.quad(lambda y: (1 - (1 + y**2)**(3./2 - slope))/y, 0.001, x)[0]
-        else:
-            for i in range(len(x)):
-                integral = np.array([integrate.quad(lambda y: (1 - (1 + y**2)**(3./2 - slope))/y, 0.001, xi)[0] for xi in x])
-        return integral
+    #  def _lensing_integral(self, x, slope = 8):
+    #      """
+    #      The analitic result of the integral entering the computation of the
+    #      lensing potential, that is
+    #      ..math::
+    #
+    #          \int dy/y (1 - (1 + y^2)^{3/2 - \beta})
+    #
+    #      :param x: evaluation point of the integral
+    #      :param slope: exponent entering the profile
+    #      :return: result of the antiderivative in x
+    #      """
+    #      if np.isscalar(x) == True:
+    #          integral = integrate.quad(lambda y: (1 - (1 + y**2)**(3./2 - slope))/y, 0.001, x)[0]
+    #      else:
+    #          for i in range(len(x)):
+    #              integral = np.array([integrate.quad(lambda y: (1 - (1 + y**2)**(3./2 - slope))/y, 0.001, xi)[0] for xi in x])
+    #      return integral
         #  prefactor = (x**2 +1)**(-slope)/(2* (4* slope**2 - 8*slope + 3 ))
         #  log_factor = 2 * np.log(x)*(4*slope**2 - 8*slope + 3 )*(x**2 +1)**slope
         #  hypF = (3 - 2*slope)* np.sqrt(x**2 +1) * (hyp2f1(1, 1 - 2*slope, 2 - 2*slope, -np.sqrt(x**2+1))
@@ -92,9 +93,13 @@ class Uldm(LensProfileBase):
         r = np.sqrt(x_** 2 + y_** 2)
         r = np.maximum(r, self._s)
         a_factor_sqrt = np.sqrt( (0.5)**(-1./slope) -1)
-        Integral_factor = self._lensing_integral(a_factor_sqrt * r / theta_c, slope)
-        prefactor = 2./(2*slope -3) * kappa_0 * theta_c**2 / a_factor_sqrt**2
-        return prefactor * Integral_factor
+        theta_tilde = theta_c/a_factor_sqrt
+        if np.isscalar(r) == True:
+            hypgeom = float(kappa_0 /2 * r**2 * hyp3f2(1, 1, slope - 0.5, 2, 2, -(r /theta_tilde)**2))
+        else:
+            hypgeom =  np.array([ kappa_0 /2. * r_i**2. *
+                hyp3f2(1, 1, slope - 0.5, 2, 2, -(r_i /theta_tilde)**2.) for r_i in r], dtype=float)
+        return hypgeom
 
     def alpha_radial(self, r, kappa_0, theta_c, slope = 8):
         """
