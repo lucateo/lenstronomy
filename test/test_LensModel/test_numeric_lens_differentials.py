@@ -314,12 +314,12 @@ class TestNumericsProfile(object):
         self.assert_differentials(lens_model, kwargs)
 
     def test_uldm(self):
-        kwargs = {'kappa_0': 0.1, 'theta_c': 5, 'slope': 4.2}
+        kwargs = {'kappa_0': 0.1, 'inverse_theta_c': 0.2, 'slope': 4.2}
         lens_model = ['ULDM']
         self.assert_differentials(lens_model, kwargs)
         
     def test_uldm_pl(self):
-        kwargs = {'kappa_tilde': 0.06, 'sampled_theta_c': 0.655, 'theta_E': 1.5, 'gamma': 1.98, 'e1': -0.1, 'e2': 0.1}
+        kwargs = {'kappa_tilde': 0.06, 'sampled_theta_c': 0.2, 'theta_E': 1.5, 'gamma': 1.98, 'e1': -0.1, 'e2': 0.1}
         lens_model = ['ULDM_PL']
         self.assert_differentials(lens_model, kwargs)
 

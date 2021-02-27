@@ -103,7 +103,7 @@ class Uldm_PL(LensProfileBase):
         """
         theta_c = self._theta_c_true(sampled_theta_c)
         #if kappa_tilde != 0:
-        angular_factor = theta_E / (kappa_tilde * theta_c)
+        angular_factor = theta_E * theta_c / kappa_tilde
         #else:
         #    angular_factor = 0
         return angular_factor / (2* np.sqrt(np.pi)  )
@@ -126,9 +126,9 @@ class Uldm_PL(LensProfileBase):
     def _half_density_thetac(self, theta_E, kappa_tilde, sampled_theta_c):
         """
         """
-        slope = self._slope(theta_E, kappa_tilde, sampled_theta_c)
-        core_half_factor = np.sqrt(0.5**(-1/slope) -1)
-        return self._theta_c_true(sampled_theta_c) * core_half_factor
+        #  slope = self._slope(theta_E, kappa_tilde, sampled_theta_c)
+        #  core_half_factor = np.sqrt(0.5**(-1/slope) -1)
+        return self._theta_c_true(sampled_theta_c) #* core_half_factor
 
     def _kappa_0_real(self, theta_E, kappa_tilde, sampled_theta_c):
         """

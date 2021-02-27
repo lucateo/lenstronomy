@@ -19,7 +19,7 @@ class TestUldm(object):
         y = 0.8
         r = np.sqrt(x**2 + y**2)
         kappa_0 = 0.1
-        theta_c = 5
+        theta_c = 0.2
         slope = 8.5
         f_ = self.model.function(r, 0, kappa_0, theta_c, slope)
         delta = 0.0001
@@ -28,7 +28,7 @@ class TestUldm(object):
         f_x, _ = self.model.derivatives(r, 0, kappa_0, theta_c, slope)
         npt.assert_almost_equal(f_x_num, f_x, decimal=3)
         # Try MSD limit
-        theta_c_large = 10
+        theta_c_large = 0.1
         f_reference = self.model.function(0, 0, kappa_0, theta_c_large, slope)
         f_large = self.model.function(r, 0, kappa_0, theta_c_large, slope)
         f_MSD = 0.5* kappa_0 * r**2
@@ -38,7 +38,7 @@ class TestUldm(object):
         x = 0.5
         y = 0.8
         r = np.sqrt(x**2 + y**2)
-        kappa_0, theta_c = 0.2, 9 # Trying MSD limit
+        kappa_0, theta_c = 0.2, 0.1 # Trying MSD limit
         slope = 8.5
         f_x, f_y = self.model.derivatives( x, y, kappa_0, theta_c, slope)
         alpha_MSD = kappa_0 * r
@@ -50,7 +50,7 @@ class TestUldm(object):
         y = 0
         r = np.sqrt(x**2 + y**2)
         kappa_0 = 0.12
-        theta_c = 6
+        theta_c = 0.2
         slope = 8.5
         f_xx, f_yy, f_xy = self.model.hessian(x, y, kappa_0, theta_c, slope)
         kappa = 1./2 * (f_xx + f_yy)
@@ -62,8 +62,8 @@ class TestUldm(object):
         y = np.array([2, 1, 1])
         r = np.sqrt(x ** 2 + y ** 2)
         kappa_0 = 0.1
-        theta_c = 7
-        slope = 8.5
+        theta_c = 0.2
+        slope = 5.5
         m3d = self.model.mass_3d(r, kappa_0, theta_c, slope)
         m3d_lens = self.model.mass_3d_lens(r, kappa_0, theta_c, slope)
         npt.assert_almost_equal(m3d, m3d_lens, decimal=8)
