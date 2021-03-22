@@ -137,10 +137,10 @@ class Uldm_PL(LensProfileBase):
         slope = self._slope(theta_E, kappa_tilde, sampled_theta_c)
         return gamma_func(slope - 0.5) * kappa_tilde / (gamma_func(slope) * a_fit**2)
 
-    def _kappa_E(self, theta_E, kappa_tilde, sampled_theta_c):
+    def _kappa_E(self, theta_E_noMSD, theta_E, kappa_tilde, sampled_theta_c):
         """
         """
         kappa_0 = self._kappa_0_real(theta_E, kappa_tilde, sampled_theta_c)
         theta_c = self._half_density_thetac(theta_E, kappa_tilde, sampled_theta_c)
         slope = self._slope(theta_E, kappa_tilde, sampled_theta_c)
-        return self._uldm.kappa_r(theta_E, kappa_0, theta_c, slope)
+        return self._uldm.kappa_r(theta_E_noMSD, kappa_0, theta_c, slope)
