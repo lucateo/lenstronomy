@@ -5,6 +5,7 @@ from lenstronomy.LensModel.Profiles.uldm import Uldm
 from lenstronomy.LensModel.Profiles.pemd import PEMD
 from scipy.special import gamma as gamma_func
 import numpy as np
+from scipy.optimize import fsolve
 
 __all__ = ['Uldm_PL']
 
@@ -32,16 +33,18 @@ class Uldm_PL(LensProfileBase):
         :param center_y: y-center of the profile
         :return: lensing potential correction
         """
-        kappa_0 = self._kappa_0_real(theta_E, kappa_tilde, sampled_theta_c)
-        theta_c = self._half_density_thetac(theta_E, kappa_tilde, sampled_theta_c)
-        slope = self._slope(theta_E, kappa_tilde, sampled_theta_c)
-        #  kappa_E = self._kappa_E(theta_E, kappa_0, sampled_theta_c)
-        #  lambda_approx = 1 - kappa_E
+        tilde_theta = self._tilde_theta_finder(kappa_tilde, sampled_theta_c, theta_E)
+
+        kappa_0 = self._kappa_0_real(tilde_theta, kappa_tilde, sampled_theta_c)
+        theta_c = self._half_density_thetac(tilde_theta, kappa_tilde, sampled_theta_c)
+        slope = self._slope(tilde_theta, kappa_tilde, sampled_theta_c)
+        kappa_E = 1 - tilde_theta/theta_E
+        r_2 = (x - center_x)**2 + (y - center_y)**2
 
         f_uldm_density = self._uldm.function(x, y, kappa_0, theta_c, slope, center_x, center_y)
         #  f_pl = lambda_approx * self._pl.function(x, y, theta_E, gamma, e1, e2, kappa_ext, center_x, center_y)
         f_pl = self._pl.function(x, y, theta_E, gamma, e1, e2, center_x, center_y)
-        return f_uldm_density + f_pl
+        return f_pl +  (f_uldm_density - 0.5 * kappa_E * r_2)/(1 - kappa_E)
 
     def derivatives(self, x, y, theta_E, gamma, e1, e2, kappa_tilde, sampled_theta_c, center_x=0, center_y=0):
         """
@@ -55,16 +58,17 @@ class Uldm_PL(LensProfileBase):
         :param center_y: y-center of the profile
         :return: alpha_x, alpha_y
         """
-        kappa_0 = self._kappa_0_real(theta_E, kappa_tilde, sampled_theta_c)
-        theta_c = self._half_density_thetac(theta_E, kappa_tilde, sampled_theta_c)
-        slope = self._slope(theta_E, kappa_tilde, sampled_theta_c)
-        #  kappa_E = self._kappa_E(theta_E, kappa_0, sampled_theta_c)
-        #  lambda_approx = 1 - kappa_E
+        tilde_theta = self._tilde_theta_finder(kappa_tilde, sampled_theta_c, theta_E)
+        kappa_0 = self._kappa_0_real(tilde_theta, kappa_tilde, sampled_theta_c)
+        theta_c = self._half_density_thetac(tilde_theta, kappa_tilde, sampled_theta_c)
+        slope = self._slope(tilde_theta, kappa_tilde, sampled_theta_c)
+        kappa_E = 1 - tilde_theta/theta_E
+        x_ = x - center_x
+        y_ = y - center_y
 
         f_x_uldm, f_y_uldm = self._uldm.derivatives(x, y, kappa_0, theta_c, slope, center_x, center_y)
-        #  f_x_pl, f_y_pl = lambda_approx * self._pl.derivatives(x, y, theta_E, gamma, e1, e2, center_x, center_y)
         f_x_pl, f_y_pl = self._pl.derivatives(x, y, theta_E, gamma, e1, e2, center_x, center_y)
-        return f_x_uldm + f_x_pl, f_y_uldm + f_y_pl
+        return (f_x_uldm - kappa_E * x_ )/(1 - kappa_E) + f_x_pl, (f_y_uldm - kappa_E *  y_ )/(1 - kappa_E) + f_y_pl
 
     def hessian(self, x, y, theta_E, gamma, e1, e2, kappa_tilde, sampled_theta_c, center_x=0, center_y=0):
         """
@@ -78,16 +82,15 @@ class Uldm_PL(LensProfileBase):
         :param center_y: y-center of the profile
         :return: df/dxx, df/dyy, df/dxy
         """
-        kappa_0 = self._kappa_0_real(theta_E, kappa_tilde, sampled_theta_c)
-        theta_c = self._half_density_thetac(theta_E, kappa_tilde, sampled_theta_c)
-        slope = self._slope(theta_E, kappa_tilde, sampled_theta_c)
-        #  kappa_E = self._kappa_E(theta_E, kappa_0, sampled_theta_c)
-        #  lambda_approx = 1 - kappa_E
+        tilde_theta = self._tilde_theta_finder(kappa_tilde, sampled_theta_c, theta_E)
+        kappa_0 = self._kappa_0_real(tilde_theta, kappa_tilde, sampled_theta_c)
+        theta_c = self._half_density_thetac(tilde_theta, kappa_tilde, sampled_theta_c)
+        slope = self._slope(tilde_theta, kappa_tilde, sampled_theta_c)
+        kappa_E = 1 - tilde_theta/theta_E
 
         f_xx_uldm, f_yy_uldm, f_xy_uldm = self._uldm.hessian(x, y, kappa_0, theta_c, slope, center_x, center_y)
-        #  f_xx_pl, f_yy_pl, f_xy_pl = lambda_approx * self._convergence.hessian(x, y, theta_E, gamma, e1, e2, center_x, center_y)
         f_xx_pl, f_yy_pl, f_xy_pl = self._pl.hessian(x, y, theta_E, gamma, e1, e2, center_x, center_y)
-        return f_xx_uldm + f_xx_pl, f_yy_uldm + f_yy_pl, f_xy_uldm + f_xy_pl
+        return (f_xx_uldm - kappa_E)/(1 - kappa_E) + f_xx_pl, (f_yy_uldm - kappa_E)/(1 - kappa_E) + f_yy_pl, f_xy_uldm/(1 - kappa_E) + f_xy_pl
 
     def _theta_c_true(self, sampled_theta_c):
         """
@@ -112,7 +115,6 @@ class Uldm_PL(LensProfileBase):
         """
         """
         z_factor = np.abs(self._z_factor(theta_E, kappa_tilde, sampled_theta_c))
-        # print(theta_E, kappa_tilde, sampled_theta_c, z_factor)
         a_fit = 0.23 * np.sqrt(1 + 7.5 * z_factor * np.tanh( 1.5 * z_factor**(0.24)) )
         return a_fit
 
@@ -144,3 +146,18 @@ class Uldm_PL(LensProfileBase):
         theta_c = self._half_density_thetac(theta_E, kappa_tilde, sampled_theta_c)
         slope = self._slope(theta_E, kappa_tilde, sampled_theta_c)
         return self._uldm.kappa_r(theta_E_noMSD, kappa_0, theta_c, slope)
+
+    def _find_tilde_theta(self, x, *arguments):
+
+        tilde_theta = x
+        kappa_tilde, inverse_theta_c, theta_E = arguments
+        kappa_E = self._kappa_E(theta_E, tilde_theta, kappa_tilde, inverse_theta_c)
+        eq1 = (1 - kappa_E)*theta_E - tilde_theta
+        return eq1
+
+    def _tilde_theta_finder(self, kappa_tilde, inverse_theta_c, theta_E):
+
+        arguments = (kappa_tilde, inverse_theta_c, theta_E)
+        tilde_theta = fsolve(self._find_tilde_theta, theta_E, args=arguments)
+        return tilde_theta[0]
+
